@@ -1,7 +1,7 @@
 import createClient from "openapi-fetch";
 import type { paths } from "./schema";
 import { API_BASE_URL } from "@/lib/config";
-import { invalidateSession } from "@/lib/auth/ensure-session";
+import { notifyUnauthorized } from "@/lib/auth/ensure-session";
 
 /**
  * Type-safe API client for the Trackdub Worker at `api.trackdub.com`.
