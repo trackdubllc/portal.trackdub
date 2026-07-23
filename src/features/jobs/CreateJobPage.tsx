@@ -135,6 +135,7 @@ export function CreateJobPage() {
 
         const res = await fetch(`${API_BASE_URL}/api/dubs/`, {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
