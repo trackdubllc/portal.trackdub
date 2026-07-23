@@ -74,14 +74,10 @@ export function CreateJobPage() {
     };
   }, []);
 
-  const getAuthToken = useCallback(async (): Promise<string | null> => {
-    try {
-      const session = await fetchAuthSession();
-      return session.tokens?.idToken?.toString() ?? null;
-    } catch {
-      return null;
-    }
-  }, []);
+  // Auth is carried by the host-only session cookie from api.trackdub.com.
+  // The FileDropZone signature still expects a token provider; return null
+  // so it falls back to `credentials: "include"` on the underlying request.
+  const getAuthToken = useCallback(async (): Promise<string | null> => null, []);
 
   const handleUploadComplete = useCallback((result: UploadResult) => {
     setInputMediaPath(result.inputMediaPath);
