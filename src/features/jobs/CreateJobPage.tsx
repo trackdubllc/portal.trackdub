@@ -110,6 +110,10 @@ export function CreateJobPage() {
         });
 
         if (!res.ok) {
+          if (res.status === 401) {
+            notifyUnauthorized();
+            return;
+          }
           let errMsg = `Failed to create job (HTTP ${res.status}).`;
           try {
             const body = await res.json();
