@@ -59,20 +59,12 @@ export function JobDetailPage() {
     setIsDownloading(true);
 
     try {
-      // Use raw fetch for binary download — openapi-fetch defaults to JSON parsing
-
-      const session = await fetchAuthSession();
-      const token = session.tokens?.idToken?.toString();
-
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
+      // Raw fetch for binary download — openapi-fetch defaults to JSON parsing.
+      // Auth is carried by the host-only session cookie via `credentials: "include"`.
       const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
       const response = await fetch(
         `${apiBase}/api/dubs/${jobId}/download`,
-        { headers },
+        { credentials: "include" },
       );
 
       if (!response.ok) {
