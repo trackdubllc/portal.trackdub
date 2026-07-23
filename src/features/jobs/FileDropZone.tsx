@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, type DragEvent } from "react";
 import { Button } from "@/components/portal";
+import { notifyUnauthorized } from "@/lib/auth/ensure-session";
 
 const ALLOWED_EXTENSIONS = new Set([
   ".mp4",
