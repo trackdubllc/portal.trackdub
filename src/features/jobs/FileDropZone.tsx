@@ -146,6 +146,8 @@ export function FileDropZone({
       formData.append("file", file);
 
       xhr.open("POST", `${apiBaseUrl}/api/dubs/upload`);
+      // Send the host-only session cookie from api.trackdub.com.
+      xhr.withCredentials = true;
       if (token) {
         xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       }
