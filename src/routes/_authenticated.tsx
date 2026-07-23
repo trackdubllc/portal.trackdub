@@ -1,12 +1,14 @@
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { AppLayout } from "@/layouts/AppLayout";
 
 /**
- * Portal auth gate. Awaits the memoized session source before deciding.
+ * Portal auth gate + shell. Awaits the memoized session before deciding.
  *
  * The Cloudflare Worker at api.trackdub.com is the authorization boundary
  * for every protected endpoint. This guard is UX only: redirect users to
  * /login when there is no session, and preserve the target URL so they
- * land back after signing in.
+ * land back after signing in. When authenticated, render the portal shell
+ * (sidebar + header) with the matched child route inside its <Outlet />.
  */
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -19,5 +21,6 @@ export const Route = createFileRoute("/_authenticated")({
       });
     }
   },
-  component: () => <Outlet />,
+  component: AppLayout,
 });
+

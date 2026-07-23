@@ -142,3 +142,25 @@
     color: var(--color-foreground);
   }
 }
+
+/* ── Trackdub portal (ported from legacy `src/index.css`) ─────────────
+ * The portal uses Space Grotesk + JetBrains Mono loaded via <link> in
+ * src/routes/__root.tsx and a warm off-white paper background with
+ * square (non-rounded) scrollbars. Layout coloring for the portal
+ * chrome is applied via inline styles in the ported components, so
+ * this section only wires the global font + scrollbar treatment.
+ */
+@layer base {
+  body {
+    font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+  }
+
+  code, kbd, pre, samp {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #ede9e2; }
+  ::-webkit-scrollbar-thumb { background: #c0b8ac; }
+  ::-webkit-scrollbar-thumb:hover { background: #a09890; }
+}

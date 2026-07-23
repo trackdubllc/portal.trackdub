@@ -1,0 +1,1 @@
+export { useLastUpdated } from "./useLastUpdated";
