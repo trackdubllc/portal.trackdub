@@ -1,7 +1,7 @@
 import createClient from "openapi-fetch";
 import type { paths } from "./schema";
 import { API_BASE_URL } from "@/lib/config";
-import { invalidateSession } from "@/lib/auth/ensure-session";
+import { notifyUnauthorized } from "@/lib/auth/ensure-session";
 
 /**
  * Type-safe API client for the Trackdub Worker at `api.trackdub.com`.
@@ -22,7 +22,7 @@ client.use({
     if (response.status === 401) {
       // Cookie expired/invalid. Drop the memoized session so the next
       // route guard sees an unauthenticated state and redirects to /login.
-      invalidateSession();
+      notifyUnauthorized();
     }
     return response;
   },

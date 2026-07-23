@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth";
+import { onUnauthorized } from "../lib/auth/ensure-session";
 import type { RouterAuthContext } from "../router";
 
 function NotFoundComponent() {
@@ -123,6 +124,31 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+
+  useEffect(() => {
+    // When any request returns 401, drop cached protected data and bounce
+    // the user to /login (preserving where they were). This is the single
+    // point that owns "the server rejected the cookie" recovery — every
+    // 401 handler funnels through notifyUnauthorized().
+    return onUnauthorized(() => {
+      void queryClient.cancelQueries();
+      queryClient.clear();
+      const here =
+        typeof window !== "undefined"
+          ? window.location.pathname + window.location.search
+          : "/";
+      const onAuthRoute = here.startsWith("/login") ||
+        here.startsWith("/forgot-password") ||
+        here.startsWith("/reset-password");
+      if (onAuthRoute) return;
+      void router.navigate({
+        to: "/login",
+        search: { redirect: here },
+        replace: true,
+      });
+    });
+  }, [queryClient, router]);
 
   return (
     <QueryClientProvider client={queryClient}>
