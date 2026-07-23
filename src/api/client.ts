@@ -22,7 +22,7 @@ client.use({
     if (response.status === 401) {
       // Cookie expired/invalid. Drop the memoized session so the next
       // route guard sees an unauthenticated state and redirects to /login.
-      invalidateSession();
+      notifyUnauthorized();
     }
     return response;
   },
