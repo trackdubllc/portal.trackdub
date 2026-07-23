@@ -322,11 +322,11 @@ export function FileDropZone({
         )}
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar + cancel */}
       {uploading && (
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-600">
-            <span>Uploading...</span>
+            <span>Uploading{selectedFile ? ` ${selectedFile.name}` : "..."}</span>
             <span>{progress}%</span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
@@ -339,6 +339,19 @@ export function FileDropZone({
               aria-valuemax={100}
               aria-label="Upload progress"
             />
+          </div>
+          <div className="flex justify-end">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                xhrRef.current?.abort();
+                setUploadError("Upload cancelled.");
+                onUploadError("Upload cancelled.");
+              }}
+            >
+              Cancel upload
+            </Button>
           </div>
         </div>
       )}
