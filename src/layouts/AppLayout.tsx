@@ -1,9 +1,24 @@
-import { Outlet } from "@/lib/router-compat";
+import { Outlet, useNavigate } from "@/lib/router-compat";
+import { useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Sidebar } from "./Sidebar";
-import { useAuth } from "../features/auth/AuthProvider";
+import { authService, invalidateSession, useAuth } from "@/lib/auth";
 
 export function AppLayout() {
-  const { user, signOut } = useAuth();
+  const { user, setLocalSession } = useAuth();
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const navigate = useNavigate();
+
+  async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await authService.signOut();
+    invalidateSession();
+    setLocalSession(null);
+    await router.invalidate();
+    navigate("/login", { replace: true });
+  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "#f5f3ee" }}>
@@ -16,7 +31,7 @@ export function AppLayout() {
         >
           <div className="flex items-center gap-3">
             <span className="text-xs" style={{ color: "#8a8a82" }}>
-              {user?.username ?? ""}
+              {user?.email ?? ""}
             </span>
             <button
               onClick={signOut}
