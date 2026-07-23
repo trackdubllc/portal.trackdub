@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useInvoices, type Invoice, type InvoiceStatus } from "@/api/hooks/useBilling";
-import { ErrorState } from "@/components/ErrorState";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { ErrorState } from "@/components/portal/ErrorState";
+import { LoadingSpinner } from "@/components/portal/LoadingSpinner";
 
 export interface InvoiceTableProps {
   className?: string;

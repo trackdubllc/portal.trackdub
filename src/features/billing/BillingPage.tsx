@@ -1,7 +1,7 @@
-import { Card } from "@/components/Card";
-import { Button } from "@/components/Button";
-import { ErrorState } from "@/components/ErrorState";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Card } from "@/components/portal/Card";
+import { Button } from "@/components/portal/Button";
+import { ErrorState } from "@/components/portal/ErrorState";
+import { LoadingSpinner } from "@/components/portal/LoadingSpinner";
 import {
   useSubscription,
   useBillingUsage,
