@@ -1,13 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "@/lib/router-compat";
 
 import { Button, Card, LoadingSpinner, ErrorState } from "@/components/portal";
 import { FileDropZone, type UploadResult } from "./FileDropZone";
-
-interface Language {
-  code: string;
-  name: string;
-}
+import { useLanguages } from "@/api/hooks/useLanguages";
+import { notifyUnauthorized } from "@/lib/auth/ensure-session";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -24,60 +21,24 @@ export function CreateJobPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Languages state
-  const [languages, setLanguages] = useState<Language[]>([]);
-  const [languagesLoading, setLanguagesLoading] = useState(true);
-  const [languagesError] = useState<string | null>(null);
+  // Languages: real /api/languages endpoint with a static fallback baked in.
+  const languagesQuery = useLanguages();
+  const languages = languagesQuery.data ?? [];
+  const languagesLoading = languagesQuery.isLoading;
+  const languagesError =
+    languagesQuery.isError && !languagesQuery.data
+      ? languagesQuery.error?.message ?? "Failed to load languages."
+      : null;
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Fetch languages on mount
-  useEffect(() => {
-    let cancelled = false;
-
-    // Static BCP-47 language list — the API validates language codes server-side
-    // via CultureInfo.GetCultureInfo, so any valid BCP-47 tag is accepted.
-    function loadLanguages() {
-      const staticLanguages: Language[] = [
-        { code: "en", name: "English" },
-        { code: "es", name: "Spanish" },
-        { code: "fr", name: "French" },
-        { code: "de", name: "German" },
-        { code: "it", name: "Italian" },
-        { code: "pt", name: "Portuguese" },
-        { code: "zh", name: "Chinese" },
-        { code: "ja", name: "Japanese" },
-        { code: "ko", name: "Korean" },
-        { code: "ru", name: "Russian" },
-        { code: "ar", name: "Arabic" },
-        { code: "hi", name: "Hindi" },
-        { code: "nl", name: "Dutch" },
-        { code: "pl", name: "Polish" },
-        { code: "tr", name: "Turkish" },
-        { code: "vi", name: "Vietnamese" },
-        { code: "th", name: "Thai" },
-        { code: "sv", name: "Swedish" },
-        { code: "da", name: "Danish" },
-        { code: "no", name: "Norwegian" },
-      ];
-      if (!cancelled) {
-        setLanguages(staticLanguages);
-        setLanguagesLoading(false);
-      }
-    }
-
-    loadLanguages();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   // Auth is carried by the host-only session cookie from api.trackdub.com.
   // The FileDropZone signature still expects a token provider; return null
   // so it falls back to `credentials: "include"` on the underlying request.
   const getAuthToken = useCallback(async (): Promise<string | null> => null, []);
+
 
   const handleUploadComplete = useCallback((result: UploadResult) => {
     setInputMediaPath(result.inputMediaPath);
