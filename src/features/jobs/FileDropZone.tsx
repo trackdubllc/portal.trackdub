@@ -113,27 +113,62 @@ export function FileDropZone({
               fileSize: file.size,
             });
           } catch {
-            const errMsg = "Failed to parse upload response.";
+            const errMsg = "The server accepted the upload but the response was malformed. Try again.";
             setUploadError(errMsg);
             onUploadError(errMsg);
           }
-        } else {
-          let errMsg = `Upload failed with status ${xhr.status}.`;
-          try {
-            const body = JSON.parse(xhr.responseText);
-            if (body.message) errMsg = body.message;
-          } catch {
-            // use default message
-          }
+          return;
+        }
+
+        // Non-2xx. Extract server message when possible; classify auth failures
+        // so we can drive a re-auth instead of showing "please retry".
+        let serverMessage: string | undefined;
+        try {
+          const body = JSON.parse(xhr.responseText);
+          serverMessage = body?.message ?? body?.error;
+        } catch {
+          /* keep undefined */
+        }
+
+        if (xhr.status === 401 || xhr.status === 403) {
+          const errMsg = "Your session expired. Sign in again to continue.";
           setUploadError(errMsg);
           onUploadError(errMsg);
+          notifyUnauthorized();
+          return;
         }
+
+        let errMsg: string;
+        if (xhr.status === 413) {
+          errMsg = "The server rejected the file as too large.";
+        } else if (xhr.status === 415) {
+          errMsg = "The server rejected this file type.";
+        } else if (xhr.status === 429) {
+          errMsg = "Too many uploads right now — wait a moment and retry.";
+        } else if (xhr.status >= 500) {
+          errMsg = serverMessage
+            ? `Server error: ${serverMessage}`
+            : "The server had a problem processing this upload. Retry in a moment.";
+        } else {
+          errMsg = serverMessage ?? `Upload failed with status ${xhr.status}.`;
+        }
+        setUploadError(errMsg);
+        onUploadError(errMsg);
       });
 
       xhr.addEventListener("error", () => {
         setUploading(false);
         xhrRef.current = null;
-        const errMsg = "Upload failed due to a network error.";
+        const errMsg =
+          "Couldn't reach api.trackdub.com. Check your connection and retry.";
+        setUploadError(errMsg);
+        onUploadError(errMsg);
+      });
+
+      xhr.addEventListener("timeout", () => {
+        setUploading(false);
+        xhrRef.current = null;
+        const errMsg = "Upload timed out. Retry, or try a smaller file.";
         setUploadError(errMsg);
         onUploadError(errMsg);
       });
