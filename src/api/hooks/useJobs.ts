@@ -124,6 +124,7 @@ function mapUsageSummary(dto: UsageSummaryApiDto): UsageResponse {
 export const jobKeys = {
   all: ["jobs"] as const,
   active: () => [...jobKeys.all, "active"] as const,
+  recent: () => [...jobKeys.all, "recent"] as const,
   usage: () => ["billing", "usage"] as const,
   list: (params?: JobsListParams) => [...jobKeys.all, "list", params] as const,
   detail: (id: string) => [...jobKeys.all, "detail", id] as const,
