@@ -1,6 +1,6 @@
 import { useNavigate } from "@/lib/router-compat";
 import { Button, ErrorState, DashboardSkeletons } from "@/components/portal";
-import { useActiveJobs, useUsage } from "@/api/hooks/useJobs";
+import { useActiveJobs, useRecentJobs, useUsage } from "@/api/hooks/useJobs";
 import { useLastUpdated } from "@/hooks";
 import { ActiveJobsCard } from "./ActiveJobsCard";
 import { UsageGauge } from "./UsageGauge";
@@ -9,22 +9,32 @@ import { RecentJobsList } from "./RecentJobsList";
 export function DashboardPage() {
   const navigate = useNavigate();
   const activeJobsQuery = useActiveJobs();
+  const recentJobsQuery = useRecentJobs();
   const usageQuery = useUsage();
-  const isRefetching = activeJobsQuery.isFetching || usageQuery.isFetching;
+  const isRefetching =
+    activeJobsQuery.isFetching ||
+    recentJobsQuery.isFetching ||
+    usageQuery.isFetching;
   const { displayTime } = useLastUpdated(isRefetching);
 
   const isLoading =
     activeJobsQuery.isPending ||
+    recentJobsQuery.isPending ||
     usageQuery.isPending ||
     !activeJobsQuery.data ||
+    !recentJobsQuery.data ||
     !usageQuery.data;
-  const hasError = activeJobsQuery.isError || usageQuery.isError;
+  const hasError =
+    activeJobsQuery.isError ||
+    recentJobsQuery.isError ||
+    usageQuery.isError;
 
   if (isLoading) return <DashboardSkeletons />;
 
   if (hasError) {
     const errorMessage =
       activeJobsQuery.error?.message ??
+      recentJobsQuery.error?.message ??
       usageQuery.error?.message ??
       "Failed to load dashboard data";
     return (
@@ -32,13 +42,15 @@ export function DashboardPage() {
         message={errorMessage}
         onRetry={() => {
           void activeJobsQuery.refetch();
+          void recentJobsQuery.refetch();
           void usageQuery.refetch();
         }}
       />
     );
   }
 
-  const { activeCount, recentJobs } = activeJobsQuery.data!;
+  const { activeCount } = activeJobsQuery.data!;
+  const recentJobs = recentJobsQuery.data!;
   const { minutesUsed, minutesIncluded } = usageQuery.data!;
 
   return (

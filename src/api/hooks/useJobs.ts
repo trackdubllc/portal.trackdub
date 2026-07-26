@@ -124,6 +124,7 @@ function mapUsageSummary(dto: UsageSummaryApiDto): UsageResponse {
 export const jobKeys = {
   all: ["jobs"] as const,
   active: () => [...jobKeys.all, "active"] as const,
+  recent: () => [...jobKeys.all, "recent"] as const,
   usage: () => ["billing", "usage"] as const,
   list: (params?: JobsListParams) => [...jobKeys.all, "list", params] as const,
   detail: (id: string) => [...jobKeys.all, "detail", id] as const,
@@ -152,6 +153,20 @@ async function fetchActiveJobs(): Promise<ActiveJobsResponse> {
   const response = data as unknown as { items?: DubJobApiDto[] } | null;
   const jobs = (response?.items ?? []).map(mapJob);
   return { activeCount: jobs.length, recentJobs: jobs.slice(0, 5) };
+}
+
+async function fetchRecentJobs(): Promise<Job[]> {
+  const { data, error } = await api.GET("/api/dubs");
+  if (error) {
+    throw new Error(
+      ((error as unknown) as { message?: string })?.message ??
+        "Failed to fetch recent jobs",
+    );
+  }
+  const response = data as unknown as { items?: DubJobApiDto[] } | null;
+  const jobs = (response?.items ?? []).map(mapJob);
+  jobs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return jobs.slice(0, 5);
 }
 
 async function fetchUsage(): Promise<UsageResponse> {
@@ -220,6 +235,23 @@ export function useActiveJobs() {
   return useQuery({
     queryKey: jobKeys.active(),
     queryFn: fetchActiveJobs,
+    refetchInterval: () => {
+      if (typeof document !== "undefined" && document.hidden) {
+        return false;
+      }
+      return 10_000;
+    },
+  });
+}
+
+/**
+ * Fetches the 5 most recent jobs across all statuses with 10s polling.
+ * Pauses polling when the page is hidden (Page Visibility API).
+ */
+export function useRecentJobs() {
+  return useQuery({
+    queryKey: jobKeys.recent(),
+    queryFn: fetchRecentJobs,
     refetchInterval: () => {
       if (typeof document !== "undefined" && document.hidden) {
         return false;
