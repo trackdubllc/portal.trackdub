@@ -155,6 +155,20 @@ async function fetchActiveJobs(): Promise<ActiveJobsResponse> {
   return { activeCount: jobs.length, recentJobs: jobs.slice(0, 5) };
 }
 
+async function fetchRecentJobs(): Promise<Job[]> {
+  const { data, error } = await api.GET("/api/dubs");
+  if (error) {
+    throw new Error(
+      ((error as unknown) as { message?: string })?.message ??
+        "Failed to fetch recent jobs",
+    );
+  }
+  const response = data as unknown as { items?: DubJobApiDto[] } | null;
+  const jobs = (response?.items ?? []).map(mapJob);
+  jobs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return jobs.slice(0, 5);
+}
+
 async function fetchUsage(): Promise<UsageResponse> {
   const { data, error } = await api.GET("/api/billing/usage");
   if (error) {
