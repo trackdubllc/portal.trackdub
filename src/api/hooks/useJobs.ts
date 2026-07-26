@@ -245,6 +245,23 @@ export function useActiveJobs() {
 }
 
 /**
+ * Fetches the 5 most recent jobs across all statuses with 10s polling.
+ * Pauses polling when the page is hidden (Page Visibility API).
+ */
+export function useRecentJobs() {
+  return useQuery({
+    queryKey: jobKeys.recent(),
+    queryFn: fetchRecentJobs,
+    refetchInterval: () => {
+      if (typeof document !== "undefined" && document.hidden) {
+        return false;
+      }
+      return 10_000;
+    },
+  });
+}
+
+/**
  * Fetches billing usage data (minutes used vs included) with 10s polling.
  * Pauses polling when the page is hidden (Page Visibility API).
  */
