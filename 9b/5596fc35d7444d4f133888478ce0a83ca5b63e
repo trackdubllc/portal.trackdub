@@ -1,0 +1,19 @@
+AGENTS.md
+  s_303c7318263447::t_a67233d9a2d405 11-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9b5596fc35d7444d4f133888478ce0a83ca5b63e",
+  "prompts": {},
+  "sessions": {
+    "s_303c7318263447": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3f6b53f1-1c2a-4b0b-be31-d892317e6428",
+        "model": "default"
+      },
+      "human_author": "tonythethompson <github@trackdub.com>"
+    }
+  }
+}
