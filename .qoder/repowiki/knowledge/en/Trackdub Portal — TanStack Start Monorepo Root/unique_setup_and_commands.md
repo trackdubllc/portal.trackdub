@@ -1,0 +1,1 @@
+`bun dev` starts the TanStack Start dev server; `bun build` runs two Vite builds (default SSR + sites client) then executes `node scripts/prepare-sites-build.mjs` to assemble the final output; `bun lint` and `bun format` run ESLint and Prettier across the whole repo. Package installation enforces a 24-hour minimum release age via `bunfig.toml` to guard against supply-chain risks.

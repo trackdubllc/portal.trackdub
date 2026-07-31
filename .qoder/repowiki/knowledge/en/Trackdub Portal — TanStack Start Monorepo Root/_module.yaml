@@ -1,0 +1,23 @@
+schema_version: 1
+module_path: ""
+title: Trackdub Portal — TanStack Start Monorepo Root
+scope:
+    - README.md
+    - package.json
+    - vite.config.ts
+    - vite.sites.config.ts
+    - bunfig.toml
+    - tsconfig.json
+    - .npmrc
+    - .prettierrc
+    - eslint.config.js
+    - components.json
+    - index.html
+    - AGENTS.md
+    - .gitignore
+    - .prettierignore
+    - bun.lock
+    - package-lock.json
+source_files: []
+depends_on: []
+related_to: []

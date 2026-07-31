@@ -1,0 +1,6 @@
+Four coordinated entry files form the app bootstrap layer:
+- `start.ts` creates a TanStack Start instance with a server-side request middleware that wraps every request in try/catch and returns an HTML error page on non-HTTP errors.
+- `server.ts` implements the Cloudflare Workers-style `fetch(request, env, ctx)` adapter: it lazily imports `@tanstack/react-start/server-entry`, forwards the request to the generated handler, and post-processes responses to detect h3-swallowed SSR 500 JSON payloads (`{"unhandled":true,"message":"HTTPError"}`), converting them into rendered error pages via `renderErrorPage()`.
+- `router.tsx` constructs a TanStack Router with a typed `RouterAuthContext` exposing `ensureSession`/`invalidateSession` from `./lib/auth/ensure-session`, plus a shared `QueryClient`; route guards are explicitly documented as UX-only since the Worker is the true authorization boundary.
+- `sites.tsx` is the client bootstrapper that mounts the React root and renders `<RouterProvider>` with the freshly created router.
+Dependency direction is one-way: `sites.tsx` → `router.tsx` → `lib/auth/*`, while `server.ts` and `start.ts` depend only on shared error utilities (`lib/error-page`, `lib/error-capture`) and never touch routing logic.

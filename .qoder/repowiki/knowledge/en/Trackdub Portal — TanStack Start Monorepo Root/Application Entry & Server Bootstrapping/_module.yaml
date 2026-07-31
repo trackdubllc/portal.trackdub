@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: app_entry
+title: Application Entry & Server Bootstrapping
+scope:
+    - src/router.tsx
+    - src/server.ts
+    - src/start.ts
+    - src/sites.tsx
+source_files: []
+depends_on: []
+related_to: []

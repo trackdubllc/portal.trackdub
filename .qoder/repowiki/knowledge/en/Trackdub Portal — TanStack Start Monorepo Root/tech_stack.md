@@ -1,0 +1,1 @@
+TanStack Start (React + Router + Query) on top of Vite 8 and Nitro for SSR; Bun as package manager and runtime; TypeScript 5 with `moduleResolution: Bundler`; ESLint 9 flat config with typescript-eslint, react-hooks, react-refresh, and Prettier integration; shadcn/ui (new-york style, lucide icons); Tailwind CSS v4 via `@tailwindcss/vite`; Zod for validation; Radix UI primitives.

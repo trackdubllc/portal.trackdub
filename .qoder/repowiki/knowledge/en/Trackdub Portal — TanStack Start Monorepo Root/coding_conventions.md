@@ -1,0 +1,5 @@
+- Server-only modules are named `*.server.ts` instead of using a `server-only` package, enforced by an ESLint no-restricted-imports rule.
+- All source files use the `@/*` path alias pointing to `./src`, shared between tsconfig.json and vite.sites.config.ts.
+- shadcn/ui components live under `@/components/ui`, utilities under `@/lib/utils`, hooks under `@/hooks`, and custom components under `@/components` per `components.json` aliases.
+- Strict TypeScript is enabled globally (strict, noUncheckedSideEffectImports, noFallthroughCasesInSwitch) with unused vars suppressed at the ESLint level rather than the compiler.
+- ESLint uses the flat config format (`eslint.config.js`) extending `tseslint.configs.recommended` plus react-hooks and react-refresh plugins.

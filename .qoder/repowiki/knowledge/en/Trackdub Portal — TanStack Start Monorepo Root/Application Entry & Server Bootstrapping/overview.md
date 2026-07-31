@@ -1,0 +1,1 @@
+Bootstraps the TanStack Start application by wiring the server fetch handler, error middleware, client router initialization, and site entry points for SSR and CSR rendering.

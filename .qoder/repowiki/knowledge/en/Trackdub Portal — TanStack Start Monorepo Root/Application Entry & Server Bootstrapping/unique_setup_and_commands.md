@@ -1,0 +1,1 @@
+The server entry is dynamically imported at runtime via `import("@tanstack/react-start/server-entry")` inside `getServerEntry()`, so the actual handler module must be produced by the TanStack Start build step before deployment.

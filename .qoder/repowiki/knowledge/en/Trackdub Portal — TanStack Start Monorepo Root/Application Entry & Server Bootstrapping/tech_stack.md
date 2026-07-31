@@ -1,0 +1,1 @@
+TanStack Start (`createStart`, `createMiddleware`) for SSR, TanStack Router with a generated `routeTree.gen`, React 18 `createRoot` for client hydration, and Cloudflare Workers-compatible `fetch` adapter pattern.

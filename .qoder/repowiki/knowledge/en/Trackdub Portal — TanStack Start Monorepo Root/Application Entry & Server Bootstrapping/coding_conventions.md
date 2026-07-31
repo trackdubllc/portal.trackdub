@@ -1,0 +1,4 @@
+- Unhandled errors are surfaced to users through a consistent HTML response built with `renderErrorPage()` and a `text/html; charset=utf-8` content-type header.
+- Server-side error handling uses explicit try/catch around async work, logging the error with `console.error` before returning a 500 Response.
+- Cross-cutting concerns (auth session checks) are injected into the router context rather than passed per-route, keeping route handlers free of boilerplate.
+- Lazy loading is used for heavy or conditional dependencies (e.g., the server entry module) to avoid bundling overhead until first use.

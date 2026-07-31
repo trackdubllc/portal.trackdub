@@ -1,0 +1,1 @@
+Root of the Trackdub portal that wires a TanStack Start SSR app (server entry via vite.config.ts) and a separate client site build (vite.sites.config.ts), unified under Bun, TypeScript, ESLint, Prettier, shadcn/ui, and Tailwind.
