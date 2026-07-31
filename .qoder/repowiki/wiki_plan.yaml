@@ -1,0 +1,50 @@
+version: 1
+
+scope:
+  include: []
+  exclude:
+    - "node_modules/**"
+    - "dist/**"
+    - ".output/**"
+    - ".tanstack/**"
+    - ".wrangler/**"
+
+repowiki:
+  template: ""
+  notes:
+    - text: >-
+        portal.trackdub is portal.trackdub.com — the Trackdub portal frontend,
+        a browser-only SPA. Stack: TanStack Start + React 19 + Vite, Tailwind
+        CSS v4 with shadcn/ui (Radix primitives), bun as package manager,
+        Cloudflare deployment (Nitro). It talks to the api.trackdub Worker with
+        credentials: "include" and holds no backend logic of its own.
+    - text: >-
+        This project is connected to Lovable. Do not rewrite published git
+        history (no force-push, rebase/amend/squash of already-pushed commits);
+        commits sync back to Lovable, so keep the branch in a working state.
+    - text: >-
+        Feature modules: Dashboard, Job Management, Billing & Subscription, and
+        Settings & Configuration. Authentication and all data access go through
+        the api.trackdub Worker; the portal is presentation + client state only.
+    - text: >-
+        Layering contract for generated docs. The knowledge cards under
+        .qoder/repowiki/knowledge/ are the canonical, auto-refreshing source of
+        truth for code-level facts and must stay current with the code. The
+        prose pages under .qoder/repowiki/en/content/ are secondary per-repo
+        detail and must not contradict the cards. The separate Trackdub.wiki
+        repo (published as the GitHub wiki) is a manually regenerated,
+        cross-repo product amalgam built FROM these cards plus Devin/Cubic
+        sources; it is downstream, not a source to copy. Keep this repo's prose
+        focused on frontend modules and client architecture; defer product-level
+        overview to the wiki.
+
+knowledgecard:
+  notes:
+    - text: >-
+        Split knowledge cards around the frontend modules (Dashboard, Job
+        Management, Billing & Subscription, Settings), the design system
+        (Tailwind v4 + shadcn/Radix tokens, dark mode), routing/app entry
+        (TanStack Start + Router, server bootstrapping), and the build system
+        (Vite + bun + Cloudflare/Nitro). Note the API client boundary
+        (openapi-fetch to the api.trackdub Worker) rather than re-documenting
+        backend behavior.
