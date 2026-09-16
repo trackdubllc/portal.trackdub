@@ -1,0 +1,9 @@
+{
+  "name": "portal.trackdub",
+  "install": "bun install",
+  "egressAllowlist": [
+    "registry.npmjs.org",
+    "api.cloudflare.com",
+    "dash.cloudflare.com"
+  ]
+}

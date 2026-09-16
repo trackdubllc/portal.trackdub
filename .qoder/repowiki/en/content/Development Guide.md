@@ -17,7 +17,15 @@
 - [src/api/client.ts](file://src/api/client.ts)
 - [scripts/prepare-sites-build.mjs](file://scripts/prepare-sites-build.mjs)
 - [sites/worker.js](file://sites/worker.js)
+- [REVIEW.md](file://REVIEW.md)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added comprehensive Code Review Guidelines section covering formal review procedures, quality standards, and contribution workflows
+- Updated Contribution Process section to include the new review requirements
+- Enhanced Quality Standards section with review-based quality gates
+- Added review workflow diagrams and checklists
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -25,14 +33,16 @@
 3. [Core Components](#core-components)
 4. [Architecture Overview](#architecture-overview)
 5. [Detailed Component Analysis](#detailed-component-analysis)
-6. [Dependency Analysis](#dependency-analysis)
-7. [Performance Considerations](#performance-considerations)
-8. [Troubleshooting Guide](#troubleshooting-guide)
-9. [Conclusion](#conclusion)
-10. [Appendices](#appendices)
+6. [Code Review Guidelines](#code-review-guidelines)
+7. [Contribution Process](#contribution-process)
+8. [Dependency Analysis](#dependency-analysis)
+9. [Performance Considerations](#performance-considerations)
+10. [Troubleshooting Guide](#troubleshooting-guide)
+11. [Conclusion](#conclusion)
+12. [Appendices](#appendices)
 
 ## Introduction
-This development guide explains how to contribute to TrackDub Portal effectively. It covers the development workflow, coding standards enforced by ESLint and Prettier, TypeScript configuration, build processes, testing guidelines, debugging techniques, performance profiling, deployment procedures, project structure conventions, naming patterns, code organization principles, development tools setup, hot reloading configuration, and debugging strategies for both frontend and API layers.
+This development guide explains how to contribute to TrackDub Portal effectively. It covers the development workflow, coding standards enforced by ESLint and Prettier, TypeScript configuration, build processes, testing guidelines, debugging techniques, performance profiling, deployment procedures, project structure conventions, naming patterns, code organization principles, development tools setup, hot reloading configuration, and debugging strategies for both frontend and API layers. The guide also includes comprehensive code review guidelines and formal contribution procedures established through the project's review process.
 
 ## Project Structure
 TrackDub Portal is a Vite-based application with React Router-based routing, TypeScript, and Bun runtime support. The key directories are:
@@ -319,6 +329,134 @@ API layer debugging:
 - [src/api/client.ts](file://src/api/client.ts)
 - [src/server.ts](file://src/server.ts)
 
+## Code Review Guidelines
+
+### Review Process Overview
+All code changes must undergo a formal review process to ensure code quality, maintainability, and adherence to project standards. The review process is designed to catch issues early, share knowledge across the team, and maintain consistent code quality.
+
+### Review Requirements
+Every pull request must meet the following requirements before merging:
+
+- **Automated Checks**: All CI/CD checks must pass including linting, formatting, and tests
+- **Minimum Reviews**: At least one approved review from a qualified reviewer
+- **Documentation Updates**: Related documentation must be updated if applicable
+- **Test Coverage**: New features must include appropriate test coverage
+- **Security Review**: Security-sensitive changes require additional security review
+
+### Review Checklist
+Reviewers should evaluate the following aspects:
+
+#### Code Quality
+- [ ] Code follows established patterns and conventions
+- [ ] Variable and function names are descriptive and consistent
+- [ ] Error handling is appropriate and comprehensive
+- [ ] No hardcoded secrets or sensitive information
+- [ ] Code is properly commented where necessary
+
+#### Functionality
+- [ ] Implementation meets the requirements
+- [ ] Edge cases are handled appropriately
+- [ ] Performance considerations are addressed
+- [ ] Memory usage is optimized
+- [ ] No breaking changes introduced
+
+#### Testing
+- [ ] Unit tests cover critical functionality
+- [ ] Integration tests validate API interactions
+- [ ] Test cases cover edge scenarios
+- [ ] Tests are maintainable and readable
+
+#### Documentation
+- [ ] Code comments explain complex logic
+- [ ] API documentation is updated
+- [ ] README or relevant docs reflect changes
+- [ ] Migration guides included for breaking changes
+
+### Review Workflow
+```mermaid
+flowchart TD
+A["Developer Creates PR"] --> B["Automated Checks Run"]
+B --> C{"Checks Pass?"}
+C --> |No| D["Fix Issues"]
+D --> A
+C --> |Yes| E["Assign Reviewer"]
+E --> F["Reviewer Evaluates Code"]
+F --> G{"Feedback Needed?"}
+G --> |Yes| H["Provide Feedback"]
+H --> I["Developer Addresses Feedback"]
+I --> F
+G --> |No| J["Approve PR"]
+J --> K["Merge to Main"]
+```
+
+**Diagram sources**
+- [REVIEW.md](file://REVIEW.md)
+
+### Reviewer Responsibilities
+Reviewers are responsible for:
+
+- Providing constructive and timely feedback
+- Ensuring code quality standards are met
+- Identifying potential security vulnerabilities
+- Suggesting improvements and best practices
+- Validating test coverage and quality
+- Checking for performance implications
+
+### Author Responsibilities
+Authors must:
+
+- Respond to review feedback promptly
+- Address all requested changes
+- Provide clear explanations for design decisions
+- Update documentation as needed
+- Ensure tests pass before requesting review
+
+**Section sources**
+- [REVIEW.md](file://REVIEW.md)
+
+## Contribution Process
+
+### Getting Started
+1. Fork the repository and create a feature branch
+2. Make your changes following the coding standards
+3. Add appropriate tests for new functionality
+4. Update documentation as needed
+5. Submit a pull request with a clear description
+
+### Pull Request Guidelines
+Pull requests should include:
+
+- **Clear Title**: Descriptive title summarizing the change
+- **Description**: Detailed explanation of what was changed and why
+- **Testing Evidence**: Screenshots or logs showing the change works
+- **Impact Assessment**: Description of potential impacts on existing functionality
+- **Migration Notes**: Steps for users if breaking changes are introduced
+
+### Review Timeline
+- **Initial Review**: Within 24 hours for regular contributions
+- **Urgent Fixes**: Priority review within 4 hours
+- **Complex Changes**: Additional time may be needed for architectural changes
+
+### Merging Criteria
+Pull requests can be merged when:
+
+- All automated checks pass
+- Required reviews are completed and approved
+- Documentation is updated
+- Tests are passing with adequate coverage
+- No outstanding conflicts exist
+
+### Post-Merge Responsibilities
+After merging:
+
+- Monitor for any immediate issues
+- Update release notes if applicable
+- Communicate changes to stakeholders
+- Plan follow-up tasks if needed
+
+**Section sources**
+- [REVIEW.md](file://REVIEW.md)
+
 ## Dependency Analysis
 Understanding the relationship between core modules helps maintain code quality and prevent circular dependencies.
 
@@ -393,7 +531,7 @@ Debugging utilities:
 - [src/lib/error-page.ts](file://src/lib/error-page.ts)
 
 ## Conclusion
-This development guide provides comprehensive information for contributing to TrackDub Portal. By following the established workflows, coding standards, and best practices outlined here, developers can maintain code quality, ensure consistent development experience, and deliver reliable features efficiently.
+This development guide provides comprehensive information for contributing to TrackDub Portal. By following the established workflows, coding standards, and best practices outlined here, developers can maintain code quality, ensure consistent development experience, and deliver reliable features efficiently. The addition of formal code review guidelines ensures that all contributions meet the project's quality standards and maintain consistency across the codebase.
 
 Key takeaways:
 - Follow established project structure and naming conventions
@@ -402,8 +540,7 @@ Key takeaways:
 - Implement comprehensive testing strategies
 - Monitor performance and optimize continuously
 - Use proper debugging techniques for efficient problem resolution
-
-[No sources needed since this section summarizes without analyzing specific files]
+- Participate actively in the code review process to maintain quality
 
 ## Appendices
 
@@ -433,6 +570,51 @@ Standard directory structure for new features:
 - API hooks in src/api/hooks/
 - Styles in src/styles.css or component-specific files
 
+### Code Review Templates
+Use these templates for consistent reviews:
+
+#### Pull Request Template
+```markdown
+## Description
+<!-- What does this PR do? -->
+
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+
+## Testing
+<!-- How did you test this change? -->
+
+## Impact
+<!-- What areas might this affect? -->
+```
+
+#### Review Checklist Template
+```markdown
+## Code Quality
+- [ ] Follows coding standards
+- [ ] Proper error handling
+- [ ] No security vulnerabilities
+
+## Functionality
+- [ ] Meets requirements
+- [ ] Handles edge cases
+- [ ] Performance considerations
+
+## Testing
+- [ ] Adequate test coverage
+- [ ] Tests are meaningful
+- [ ] Edge cases covered
+
+## Documentation
+- [ ] Code is well-commented
+- [ ] API docs updated
+- [ ] README reflects changes
+```
+
 **Section sources**
 - [package.json](file://package.json)
 - [bunfig.toml](file://bunfig.toml)
+- [REVIEW.md](file://REVIEW.md)
