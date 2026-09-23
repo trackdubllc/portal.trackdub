@@ -4,9 +4,8 @@ import { useNavigate } from "@/lib/router-compat";
 import { Button, Card, LoadingSpinner, ErrorState } from "@/components/portal";
 import { FileDropZone, type UploadResult } from "./FileDropZone";
 import { useLanguages } from "@/api/hooks/useLanguages";
-import { notifyUnauthorized } from "@/lib/auth/ensure-session";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+import { useUploadCapabilities, useIntakeCapabilities } from "@/api/hooks/useJobs";
+import { apiJson, dubJobSchema } from "@/api/runtime";
 
 export function CreateJobPage() {
   const navigate = useNavigate();
@@ -23,22 +22,20 @@ export function CreateJobPage() {
 
   // Languages: real /api/languages endpoint with a static fallback baked in.
   const languagesQuery = useLanguages();
+  const capabilitiesQuery = useUploadCapabilities();
+  const intakeCapabilitiesQuery = useIntakeCapabilities();
+  const intakeReady = intakeCapabilitiesQuery.data?.capabilities.jobIntake === true;
+  const uploadReady = capabilitiesQuery.data?.capabilities.jobIntake === true;
   const languages = languagesQuery.data ?? [];
   const languagesLoading = languagesQuery.isLoading;
   const languagesError =
     languagesQuery.isError && !languagesQuery.data
-      ? languagesQuery.error?.message ?? "Failed to load languages."
+      ? (languagesQuery.error?.message ?? "Failed to load languages.")
       : null;
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-  // Auth is carried by the host-only session cookie from api.trackdub.com.
-  // The FileDropZone signature still expects a token provider; return null
-  // so it falls back to `credentials: "include"` on the underlying request.
-  const getAuthToken = useCallback(async (): Promise<string | null> => null, []);
-
 
   const handleUploadComplete = useCallback((result: UploadResult) => {
     setInputMediaPath(result.inputMediaPath);
@@ -59,15 +56,13 @@ export function CreateJobPage() {
   }, []);
 
   // Validation
-  const projectNameValid =
-    projectName.length >= 1 && projectName.length <= 128;
+  const projectNameValid = projectName.length >= 1 && projectName.length <= 128;
   const languagesDistinct =
-    sourceLanguage !== "" &&
-    targetLanguage !== "" &&
-    sourceLanguage !== targetLanguage;
+    sourceLanguage !== "" && targetLanguage !== "" && sourceLanguage !== targetLanguage;
   const formValid = projectNameValid && languagesDistinct && inputMediaPath !== null;
 
-  const isSubmitDisabled = !formValid || uploading || submitting;
+  const isSubmitDisabled =
+    !formValid || uploading || submitting || !intakeReady || intakeCapabilitiesQuery.isError;
 
   // Computed validation messages
   const projectNameError = useMemo(() => {
@@ -92,14 +87,10 @@ export function CreateJobPage() {
       setSubmitError(null);
 
       try {
-        const token = await getAuthToken();
-
-        const res = await fetch(`${API_BASE_URL}/api/dubs/`, {
+        const data = await apiJson("/api/dubs/", dubJobSchema, {
           method: "POST",
-          credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
             projectName,
@@ -108,44 +99,14 @@ export function CreateJobPage() {
             inputMediaPath,
           }),
         });
-
-        if (!res.ok) {
-          if (res.status === 401) {
-            notifyUnauthorized();
-            return;
-          }
-          let errMsg = `Failed to create job (HTTP ${res.status}).`;
-          try {
-            const body = await res.json();
-            if (body.message) errMsg = body.message;
-            if (body.error) errMsg = body.error;
-          } catch {
-            // use default message
-          }
-          setSubmitError(errMsg);
-          return;
-        }
-
-        const data = await res.json();
-        const jobId = data.jobId ?? data.id;
-        navigate(`/jobs/${jobId}`);
+        navigate(`/jobs/${data.id}`);
       } catch (err) {
-        setSubmitError(
-          err instanceof Error ? err.message : "An unexpected error occurred.",
-        );
+        setSubmitError(err instanceof Error ? err.message : "An unexpected error occurred.");
       } finally {
         setSubmitting(false);
       }
     },
-    [
-      isSubmitDisabled,
-      getAuthToken,
-      projectName,
-      sourceLanguage,
-      targetLanguage,
-      inputMediaPath,
-      navigate,
-    ],
+    [isSubmitDisabled, projectName, sourceLanguage, targetLanguage, inputMediaPath, navigate],
   );
 
   if (languagesLoading) {
@@ -153,12 +114,7 @@ export function CreateJobPage() {
   }
 
   if (languagesError) {
-    return (
-      <ErrorState
-        message={languagesError}
-        onRetry={() => window.location.reload()}
-      />
-    );
+    return <ErrorState message={languagesError} onRetry={() => window.location.reload()} />;
   }
 
   return (
@@ -171,15 +127,41 @@ export function CreateJobPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {(capabilitiesQuery.isError ||
+          !uploadReady ||
+          !intakeReady ||
+          intakeCapabilitiesQuery.isError) && (
+          <div
+            role="status"
+            className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"
+          >
+            {capabilitiesQuery.isError || intakeCapabilitiesQuery.isError
+              ? `Could not verify cloud processing availability. ${capabilitiesQuery.error?.message ?? intakeCapabilitiesQuery.error?.message}`
+              : !uploadReady
+                ? "Cloud processing is unavailable, so uploads and new jobs are paused. Existing jobs remain available from Jobs."
+                : ""}
+            {(capabilitiesQuery.isError || intakeCapabilitiesQuery.isError) && (
+              <button
+                className="ml-2 underline"
+                onClick={() => {
+                  void capabilitiesQuery.refetch();
+                  void intakeCapabilitiesQuery.refetch();
+                }}
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        )}
         {/* File Upload */}
         <Card title="Media File">
           <FileDropZone
-            apiBaseUrl={API_BASE_URL}
-            getAuthToken={getAuthToken}
             onUploadComplete={handleUploadComplete}
             onUploadError={handleUploadError}
             onUploadStart={handleUploadStart}
-            disabled={submitting}
+            disabled={
+              submitting || !uploadReady || capabilitiesQuery.isLoading || capabilitiesQuery.isError
+            }
           />
         </Card>
 
@@ -188,10 +170,7 @@ export function CreateJobPage() {
           <div className="space-y-4">
             {/* Project Name */}
             <div>
-              <label
-                htmlFor="projectName"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="projectName" className="block text-sm font-medium text-gray-700">
                 Project Name
               </label>
               <input
@@ -205,9 +184,7 @@ export function CreateJobPage() {
                 aria-describedby={projectNameError ? "projectName-error" : undefined}
                 aria-invalid={!!projectNameError}
                 className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  projectNameError
-                    ? "border-red-300 focus:ring-red-500"
-                    : "border-gray-300"
+                  projectNameError ? "border-red-300 focus:ring-red-500" : "border-gray-300"
                 }`}
               />
               <div className="mt-1 flex items-center justify-between">
@@ -218,18 +195,13 @@ export function CreateJobPage() {
                 ) : (
                   <span />
                 )}
-                <p className="text-xs text-gray-400">
-                  {projectName.length}/128
-                </p>
+                <p className="text-xs text-gray-400">{projectName.length}/128</p>
               </div>
             </div>
 
             {/* Source Language */}
             <div>
-              <label
-                htmlFor="sourceLanguage"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="sourceLanguage" className="block text-sm font-medium text-gray-700">
                 Source Language
               </label>
               <select
@@ -250,10 +222,7 @@ export function CreateJobPage() {
 
             {/* Target Language */}
             <div>
-              <label
-                htmlFor="targetLanguage"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="targetLanguage" className="block text-sm font-medium text-gray-700">
                 Target Language
               </label>
               <select
@@ -264,9 +233,7 @@ export function CreateJobPage() {
                 aria-describedby={languageError ? "language-error" : undefined}
                 aria-invalid={!!languageError}
                 className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  languageError
-                    ? "border-red-300 focus:ring-red-500"
-                    : "border-gray-300"
+                  languageError ? "border-red-300 focus:ring-red-500" : "border-gray-300"
                 }`}
               >
                 <option value="">Select target language</option>
@@ -295,20 +262,13 @@ export function CreateJobPage() {
         {/* Upload Error (inline at form level) */}
         {uploadError && !inputMediaPath && (
           <div role="alert" className="rounded-md bg-yellow-50 p-4">
-            <p className="text-sm text-yellow-800">
-              File upload issue: {uploadError}
-            </p>
+            <p className="text-sm text-yellow-800">File upload issue: {uploadError}</p>
           </div>
         )}
 
         {/* Submit */}
         <div className="flex justify-end">
-          <Button
-            type="submit"
-            disabled={isSubmitDisabled}
-            loading={submitting}
-            size="lg"
-          >
+          <Button type="submit" disabled={isSubmitDisabled} loading={submitting} size="lg">
             Create Job
           </Button>
         </div>

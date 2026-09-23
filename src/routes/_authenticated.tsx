@@ -13,7 +13,12 @@ import { AppLayout } from "@/layouts/AppLayout";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async ({ context, location }) => {
-    const session = await context.auth.ensureSession();
+    let session = null;
+    try {
+      session = await context.auth.ensureSession();
+    } catch {
+      /* Render shell; AuthProvider shows retryable outage. */
+    }
     if (!session?.user) {
       throw redirect({
         to: "/login",
@@ -23,4 +28,3 @@ export const Route = createFileRoute("/_authenticated")({
   },
   component: AppLayout,
 });
-

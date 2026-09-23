@@ -5,7 +5,7 @@ import { Sidebar } from "./Sidebar";
 import { authService, invalidateSession, useAuth } from "@/lib/auth";
 
 export function AppLayout() {
-  const { user, setLocalSession } = useAuth();
+  const { user, setLocalSession, status, error, refresh } = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
   const navigate = useNavigate();
@@ -56,6 +56,17 @@ export function AppLayout() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-7">
+          {status === "unavailable" && (
+            <div
+              role="alert"
+              className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+            >
+              Session service unavailable. {error?.message ?? "Retry before continuing."}
+              <button className="ml-2 underline" onClick={() => void refresh()}>
+                Retry
+              </button>
+            </div>
+          )}
           <Outlet />
         </main>
       </div>

@@ -70,7 +70,10 @@ export function useNavigate() {
 }
 
 export function useParams<T extends Record<string, string> = Record<string, string>>(): T {
-  return useTSParams({ strict: false }) as T;
+  // The compat layer intentionally exposes params without route typing.
+  // TanStack's generic hook type is route-contextual and cannot express this shim.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return useTSParams({ strict: false } as never) as T;
 }
 
 export function useLocation() {

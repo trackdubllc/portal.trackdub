@@ -10,12 +10,13 @@ import {
 import { authService, type Session } from "./auth-service";
 import { ensureSession, invalidateSession, setSession } from "./ensure-session";
 
-type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+type AuthStatus = "loading" | "authenticated" | "unauthenticated" | "unavailable";
 
 type AuthContextValue = {
   status: AuthStatus;
   session: Session | null;
   user: Session["user"] | null;
+  error: Error | null;
   /** Force a re-read of GET /api/auth/session. */
   refresh: () => Promise<Session | null>;
   /** Local-only: update after sign-in / sign-out so React re-renders. */
@@ -27,14 +28,22 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSessionState] = useState<Session | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    ensureSession().then((s) => {
-      if (cancelled) return;
-      setSessionState(s);
-      setStatus(s ? "authenticated" : "unauthenticated");
-    });
+    ensureSession()
+      .then((s) => {
+        if (cancelled) return;
+        setSessionState(s);
+        setError(null);
+        setStatus(s ? "authenticated" : "unauthenticated");
+      })
+      .catch((reason: unknown) => {
+        if (cancelled) return;
+        setError(reason instanceof Error ? reason : new Error("Session check failed"));
+        setStatus("unavailable");
+      });
     return () => {
       cancelled = true;
     };
@@ -45,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const s = await authService.getSession();
     setSession(s);
     setSessionState(s);
+    setError(null);
     setStatus(s ? "authenticated" : "unauthenticated");
     return s;
   }, []);
@@ -52,12 +62,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setLocalSession = useCallback((next: Session | null) => {
     setSession(next);
     setSessionState(next);
+    setError(null);
     setStatus(next ? "authenticated" : "unauthenticated");
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, session, user: session?.user ?? null, refresh, setLocalSession }),
-    [status, session, refresh, setLocalSession],
+    () => ({ status, session, user: session?.user ?? null, error, refresh, setLocalSession }),
+    [status, session, error, refresh, setLocalSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

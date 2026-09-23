@@ -1,4 +1,4 @@
-import { authService, type Session } from "./auth-service";
+import { authService, SessionTransientError, type Session } from "./auth-service";
 
 /**
  * Awaitable, memoized session source used by TanStack route guards.
@@ -17,8 +17,28 @@ let cached: Promise<Session | null> | null = null;
 
 export function ensureSession(): Promise<Session | null> {
   if (cached) return cached;
-  cached = authService.getSession().catch(() => null);
+  cached = authService.getSession().catch((error: unknown) => {
+    cached = null;
+    throw error;
+  });
   return cached;
+}
+
+export async function getSessionStatus(): Promise<{
+  session: Session | null;
+  error: Error | null;
+}> {
+  try {
+    return { session: await ensureSession(), error: null };
+  } catch (error) {
+    return {
+      session: null,
+      error:
+        error instanceof SessionTransientError
+          ? error
+          : new SessionTransientError("Could not verify your session. Retry shortly."),
+    };
+  }
 }
 
 export function invalidateSession(): void {

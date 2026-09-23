@@ -8,7 +8,12 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 export const Route = createFileRoute("/")({
   ssr: false,
   beforeLoad: async ({ context }) => {
-    const session = await context.auth.ensureSession();
+    let session = null;
+    try {
+      session = await context.auth.ensureSession();
+    } catch {
+      /* Root auth UI exposes retryable outage state. */
+    }
     throw redirect({ to: session?.user ? "/dashboard" : "/login" });
   },
   component: () => null,

@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, type DragEvent } from "react";
 import { Button } from "@/components/portal";
-import { notifyUnauthorized } from "@/lib/auth/ensure-session";
+import { apiUpload } from "@/api/runtime";
 
 const ALLOWED_EXTENSIONS = new Set([
   ".mp4",
@@ -14,7 +14,7 @@ const ALLOWED_EXTENSIONS = new Set([
   ".ogg",
 ]);
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5 GB
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // Must match api.trackdub Worker limit.
 
 export interface UploadResult {
   inputMediaPath: string;
@@ -23,8 +23,6 @@ export interface UploadResult {
 }
 
 export interface FileDropZoneProps {
-  apiBaseUrl: string;
-  getAuthToken: () => Promise<string | null>;
   onUploadComplete: (result: UploadResult) => void;
   onUploadError: (error: string) => void;
   onUploadStart?: () => void;
@@ -48,14 +46,12 @@ export function isValidExtension(fileName: string): boolean {
   return ALLOWED_EXTENSIONS.has(ext);
 }
 
-/** Validates file size is within the 5 GB limit. */
+/** Validates file size is within the Worker upload limit. */
 export function isValidSize(size: number): boolean {
   return size > 0 && size <= MAX_FILE_SIZE;
 }
 
 export function FileDropZone({
-  apiBaseUrl,
-  getAuthToken,
   onUploadComplete,
   onUploadError,
   onUploadStart,
@@ -76,7 +72,7 @@ export function FileDropZone({
       return `Unsupported file type "${ext}". Accepted: ${[...ALLOWED_EXTENSIONS].join(", ")}`;
     }
     if (!isValidSize(file.size)) {
-      return `File size (${formatFileSize(file.size)}) exceeds the 5 GB limit.`;
+      return `File size (${formatFileSize(file.size)}) exceeds the 100 MB limit.`;
     }
     return null;
   }, []);
@@ -88,108 +84,27 @@ export function FileDropZone({
       setProgress(0);
       onUploadStart?.();
 
-      const token = await getAuthToken();
-
-      const xhr = new XMLHttpRequest();
-      xhrRef.current = xhr;
-
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          setProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      });
-
-      xhr.addEventListener("load", () => {
+      try {
+        const response = await apiUpload(file, setProgress, (xhr) => {
+          xhrRef.current = xhr;
+        });
+        setUploaded(true);
+        onUploadComplete({
+          inputMediaPath: response.filePath,
+          fileName: response.fileName,
+          fileSize: response.fileSize,
+        });
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        const message = error instanceof Error ? error.message : "Upload failed. Retry.";
+        setUploadError(message);
+        onUploadError(message);
+      } finally {
         setUploading(false);
         xhrRef.current = null;
-
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const response = JSON.parse(xhr.responseText);
-            setUploaded(true);
-            onUploadComplete({
-              inputMediaPath: response.filePath,
-              fileName: file.name,
-              fileSize: file.size,
-            });
-          } catch {
-            const errMsg = "The server accepted the upload but the response was malformed. Try again.";
-            setUploadError(errMsg);
-            onUploadError(errMsg);
-          }
-          return;
-        }
-
-        // Non-2xx. Extract server message when possible; classify auth failures
-        // so we can drive a re-auth instead of showing "please retry".
-        let serverMessage: string | undefined;
-        try {
-          const body = JSON.parse(xhr.responseText);
-          serverMessage = body?.message ?? body?.error;
-        } catch {
-          /* keep undefined */
-        }
-
-        if (xhr.status === 401 || xhr.status === 403) {
-          const errMsg = "Your session expired. Sign in again to continue.";
-          setUploadError(errMsg);
-          onUploadError(errMsg);
-          notifyUnauthorized();
-          return;
-        }
-
-        let errMsg: string;
-        if (xhr.status === 413) {
-          errMsg = "The server rejected the file as too large.";
-        } else if (xhr.status === 415) {
-          errMsg = "The server rejected this file type.";
-        } else if (xhr.status === 429) {
-          errMsg = "Too many uploads right now — wait a moment and retry.";
-        } else if (xhr.status >= 500) {
-          errMsg = serverMessage
-            ? `Server error: ${serverMessage}`
-            : "The server had a problem processing this upload. Retry in a moment.";
-        } else {
-          errMsg = serverMessage ?? `Upload failed with status ${xhr.status}.`;
-        }
-        setUploadError(errMsg);
-        onUploadError(errMsg);
-      });
-
-      xhr.addEventListener("error", () => {
-        setUploading(false);
-        xhrRef.current = null;
-        const errMsg =
-          "Couldn't reach api.trackdub.com. Check your connection and retry.";
-        setUploadError(errMsg);
-        onUploadError(errMsg);
-      });
-
-      xhr.addEventListener("timeout", () => {
-        setUploading(false);
-        xhrRef.current = null;
-        const errMsg = "Upload timed out. Retry, or try a smaller file.";
-        setUploadError(errMsg);
-        onUploadError(errMsg);
-      });
-
-      xhr.addEventListener("abort", () => {
-        setUploading(false);
-        xhrRef.current = null;
-      });
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      xhr.open("POST", `${apiBaseUrl}/api/dubs/upload`);
-      // Send the host-only session cookie from api.trackdub.com.
-      xhr.withCredentials = true;
-      if (token) {
-        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       }
-      xhr.send(formData);
     },
-    [apiBaseUrl, getAuthToken, onUploadComplete, onUploadError, onUploadStart],
+    [onUploadComplete, onUploadError, onUploadStart],
   );
 
   const handleFile = useCallback(
@@ -304,20 +219,15 @@ export function FileDropZone({
               <span className="font-medium text-indigo-600">browse</span>
             </p>
             <p className="mt-1 text-xs text-gray-500">
-              Supported: MP4, MKV, MOV, AVI, WebM, MP3, WAV, FLAC, OGG (max 5
-              GB)
+              Supported: MP4, MKV, MOV, AVI, WebM, MP3, WAV, FLAC, OGG (max 100 MB)
             </p>
           </>
         )}
 
         {selectedFile && !uploadError && (
           <div className="w-full text-center">
-            <p className="text-sm font-medium text-gray-900">
-              {selectedFile.name}
-            </p>
-            <p className="text-xs text-gray-500">
-              {formatFileSize(selectedFile.size)}
-            </p>
+            <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
+            <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
           </div>
         )}
       </div>
@@ -359,12 +269,7 @@ export function FileDropZone({
       {/* Upload complete indicator */}
       {uploaded && !uploading && !uploadError && (
         <p className="flex items-center gap-1 text-sm text-green-600">
-          <svg
-            className="h-4 w-4"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-            aria-hidden="true"
-          >
+          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
             <path
               fillRule="evenodd"
               d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"

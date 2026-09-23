@@ -275,6 +275,12 @@ export interface components {
             /** Format: double */
             memoryMb?: number | string;
             availablePipelines?: string[];
+            capabilities?: {
+                jobIntake: boolean;
+                upload: boolean;
+                jobProcessing: boolean;
+                outputDownload: boolean;
+            };
         };
         RegisterWebhookRequest: {
             url: string;

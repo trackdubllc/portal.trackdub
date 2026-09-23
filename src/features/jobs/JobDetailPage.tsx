@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "@/lib/router-compat";
-import {
-  useJobDetail,
-  useCancelJob,
-  isTerminalStatus,
-  type JobStatus,
-} from "@/api/hooks/useJobs";
+import { useJobDetail, useCancelJob, isTerminalStatus, type JobStatus } from "@/api/hooks/useJobs";
 import { Button, Card, ErrorState, LoadingSpinner } from "@/components/portal";
 import { JobStatusBadge } from "./JobStatusBadge";
+import { API_BASE_URL } from "@/lib/config";
+import { filenameFromDisposition } from "@/api/runtime";
+import { notifyUnauthorized } from "@/lib/auth/ensure-session";
 
 function formatTimestamp(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -61,35 +59,33 @@ export function JobDetailPage() {
     try {
       // Raw fetch for binary download — openapi-fetch defaults to JSON parsing.
       // Auth is carried by the host-only session cookie via `credentials: "include"`.
-      const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
       const response = await fetch(
-        `${apiBase}/api/dubs/${jobId}/download`,
+        `${API_BASE_URL}/api/dubs/${encodeURIComponent(jobId)}/download`,
         { credentials: "include" },
       );
 
       if (!response.ok) {
-        throw new Error(
-          response.status === 404
-            ? "Download not available"
-            : response.status === 409
-              ? "Job not completed"
-              : `Download failed (${response.status})`,
-        );
+        const error = (await response.json().catch(() => null)) as {
+          error?: { message?: string };
+        } | null;
+        if (response.status === 401 || response.status === 403) notifyUnauthorized();
+        throw new Error(error?.error?.message ?? `Download failed (${response.status})`);
       }
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${job?.projectName ?? "output"}.mp4`;
+      a.download = filenameFromDisposition(
+        response.headers.get("content-disposition"),
+        `${job?.projectName ?? "output"}.bin`,
+      );
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (err) {
-      setDownloadError(
-        err instanceof Error ? err.message : "Failed to download file",
-      );
+      setDownloadError(err instanceof Error ? err.message : "Failed to download file");
     } finally {
       setIsDownloading(false);
     }
@@ -126,9 +122,7 @@ export function JobDetailPage() {
           >
             ← Jobs
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {job.projectName}
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900">{job.projectName}</h1>
         </div>
         <div className="flex items-center gap-3">
           {canCancel(job.status) && (
@@ -187,9 +181,7 @@ export function JobDetailPage() {
           {/* Pipeline Stage */}
           <div>
             <dt className="text-sm font-medium text-gray-500">Pipeline Stage</dt>
-            <dd className="mt-1 text-sm text-gray-900">
-              {job.pipelineStage ?? "—"}
-            </dd>
+            <dd className="mt-1 text-sm text-gray-900">{job.pipelineStage ?? "—"}</dd>
           </div>
 
           {/* Languages */}
@@ -203,25 +195,19 @@ export function JobDetailPage() {
           {/* Created */}
           <div>
             <dt className="text-sm font-medium text-gray-500">Created</dt>
-            <dd className="mt-1 text-sm text-gray-900">
-              {formatTimestamp(job.createdAt)}
-            </dd>
+            <dd className="mt-1 text-sm text-gray-900">{formatTimestamp(job.createdAt)}</dd>
           </div>
 
           {/* Completed */}
           <div>
             <dt className="text-sm font-medium text-gray-500">Completed</dt>
-            <dd className="mt-1 text-sm text-gray-900">
-              {formatTimestamp(job.completedAt)}
-            </dd>
+            <dd className="mt-1 text-sm text-gray-900">{formatTimestamp(job.completedAt)}</dd>
           </div>
 
           {/* Duration */}
           <div>
             <dt className="text-sm font-medium text-gray-500">Duration</dt>
-            <dd className="mt-1 text-sm text-gray-900">
-              {formatDuration(job.duration)}
-            </dd>
+            <dd className="mt-1 text-sm text-gray-900">{formatDuration(job.duration)}</dd>
           </div>
         </div>
 
@@ -276,9 +262,7 @@ export function JobDetailPage() {
 
       {/* Polling indicator */}
       {!isTerminalStatus(job.status) && (
-        <p className="text-xs text-gray-400">
-          Auto-refreshing every 5 seconds…
-        </p>
+        <p className="text-xs text-gray-400">Auto-refreshing every 5 seconds…</p>
       )}
     </div>
   );

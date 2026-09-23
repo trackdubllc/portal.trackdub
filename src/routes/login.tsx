@@ -23,7 +23,12 @@ export const Route = createFileRoute("/login")({
     ],
   }),
   beforeLoad: async ({ context, search }) => {
-    const session = await context.auth.ensureSession();
+    let session = null;
+    try {
+      session = await context.auth.ensureSession();
+    } catch {
+      /* Let login render; transient errors appear inline. */
+    }
     if (session?.user) {
       throw redirect({ to: (search.redirect as never) ?? "/dashboard" });
     }
@@ -35,7 +40,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const router = useRouter();
   const search = Route.useSearch();
-  const { setLocalSession } = useAuth();
+  const { setLocalSession, status: authStatus, error: sessionError, refresh } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -95,7 +100,10 @@ function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <a href="/forgot-password" className="text-xs text-muted-foreground hover:text-foreground">
+                <a
+                  href="/forgot-password"
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
                   Forgot?
                 </a>
               </div>
@@ -112,6 +120,14 @@ function LoginPage() {
             {error && (
               <p role="alert" className="text-sm text-destructive">
                 {error}
+              </p>
+            )}
+            {authStatus === "unavailable" && (
+              <p role="alert" className="text-sm text-destructive">
+                {sessionError?.message ?? "Session service unavailable."}{" "}
+                <button type="button" className="underline" onClick={() => void refresh()}>
+                  Retry
+                </button>
               </p>
             )}
             <Button type="submit" className="w-full" disabled={submitting}>

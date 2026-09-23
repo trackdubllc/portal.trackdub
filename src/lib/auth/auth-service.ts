@@ -19,6 +19,13 @@ export type Session = {
 
 export type AuthResult<T> = AuthClientResult<T>;
 
+export class SessionTransientError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SessionTransientError";
+  }
+}
+
 export const authService = {
   /** Returns the current session, or `null` when unauthenticated. */
   async getSession(signal?: AbortSignal): Promise<Session | null> {
@@ -26,7 +33,11 @@ export const authService = {
     if (!res.ok) {
       // 401/403 are expected "no session" — surface as null.
       if (res.status === 401 || res.status === 403) return null;
-      return null;
+      throw new SessionTransientError(
+        res.status === 0
+          ? "Network error while checking session"
+          : `Session check failed (${res.status})`,
+      );
     }
     // Better Auth returns `null` or an empty body when no session.
     if (!res.data || !("user" in res.data)) return null;

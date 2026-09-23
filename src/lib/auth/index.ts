@@ -1,7 +1,8 @@
 export { authClient } from "./auth-client";
-export { authService, type Session, type SessionUser } from "./auth-service";
+export { authService, SessionTransientError, type Session, type SessionUser } from "./auth-service";
 export {
   ensureSession,
+  getSessionStatus,
   invalidateSession,
   setSession,
   onUnauthorized,

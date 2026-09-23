@@ -1,69 +1,49 @@
 import { useNavigate } from "@/lib/router-compat";
-import { Button, ErrorState, DashboardSkeletons } from "@/components/portal";
-import { useActiveJobs, useRecentJobs, useUsage } from "@/api/hooks/useJobs";
+import { Button, Card, ErrorState, DashboardSkeletons } from "@/components/portal";
+import { useActiveJobs, useCapabilities, useRecentJobs } from "@/api/hooks/useJobs";
 import { useLastUpdated } from "@/hooks";
 import { ActiveJobsCard } from "./ActiveJobsCard";
-import { UsageGauge } from "./UsageGauge";
 import { RecentJobsList } from "./RecentJobsList";
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const activeJobsQuery = useActiveJobs();
   const recentJobsQuery = useRecentJobs();
-  const usageQuery = useUsage();
+  const capabilitiesQuery = useCapabilities();
   const isRefetching =
-    activeJobsQuery.isFetching ||
-    recentJobsQuery.isFetching ||
-    usageQuery.isFetching;
+    activeJobsQuery.isFetching || recentJobsQuery.isFetching || capabilitiesQuery.isFetching;
   const { displayTime } = useLastUpdated(isRefetching);
 
   const isLoading =
-    activeJobsQuery.isPending ||
-    recentJobsQuery.isPending ||
-    usageQuery.isPending ||
-    !activeJobsQuery.data ||
-    !recentJobsQuery.data ||
-    !usageQuery.data;
-  const hasError =
-    activeJobsQuery.isError ||
-    recentJobsQuery.isError ||
-    usageQuery.isError;
+    activeJobsQuery.isPending && recentJobsQuery.isPending && capabilitiesQuery.isPending;
 
   if (isLoading) return <DashboardSkeletons />;
 
-  if (hasError) {
-    const errorMessage =
-      activeJobsQuery.error?.message ??
-      recentJobsQuery.error?.message ??
-      usageQuery.error?.message ??
-      "Failed to load dashboard data";
-    return (
-      <ErrorState
-        message={errorMessage}
-        onRetry={() => {
-          void activeJobsQuery.refetch();
-          void recentJobsQuery.refetch();
-          void usageQuery.refetch();
-        }}
-      />
-    );
-  }
-
-  const { activeCount } = activeJobsQuery.data!;
-  const recentJobs = recentJobsQuery.data!;
-  const { minutesUsed, minutesIncluded } = usageQuery.data!;
+  const activeCount = activeJobsQuery.data?.activeCount ?? 0;
+  const recentJobs = recentJobsQuery.data ?? [];
+  const intakeReady = capabilitiesQuery.data?.capabilities.jobIntake === true;
+  const capabilityError = capabilitiesQuery.isError;
 
   return (
     <div className="space-y-7">
-      <div className="flex items-center justify-between" style={{ borderBottom: "1px solid #e0dbd2", paddingBottom: "16px" }}>
+      <div
+        className="flex items-center justify-between"
+        style={{ borderBottom: "1px solid #e0dbd2", paddingBottom: "16px" }}
+      >
         <div>
           <h1 className="text-lg font-semibold tracking-tight" style={{ color: "#1c1c1a" }}>
             Dashboard
           </h1>
-          <p className="mt-0.5 flex items-center gap-2 font-mono text-[10px]" style={{ color: "#8a8a82" }}>
+          <p
+            className="mt-0.5 flex items-center gap-2 font-mono text-[10px]"
+            style={{ color: "#8a8a82" }}
+          >
             {isRefetching ? (
               <>
-                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: "#c17f3a" }} />
+                <span
+                  className="inline-block h-1.5 w-1.5 animate-pulse rounded-full"
+                  style={{ background: "#c17f3a" }}
+                />
                 Updating…
               </>
             ) : (
@@ -71,15 +51,55 @@ export function DashboardPage() {
             )}
           </p>
         </div>
-        <Button onClick={() => navigate("/jobs/new")}>Upload New Job</Button>
+        <Button disabled={!intakeReady} onClick={() => navigate("/jobs/new")}>
+          Upload New Job
+        </Button>
       </div>
+
+      {(capabilityError || !intakeReady) && (
+        <div
+          role="status"
+          className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+        >
+          {capabilityError
+            ? `Could not verify cloud processing availability. ${capabilitiesQuery.error.message}`
+            : "Cloud dubbing intake is paused because no processing worker is available. Existing jobs and completed outputs remain accessible."}
+          {capabilityError && (
+            <button className="ml-2 underline" onClick={() => void capabilitiesQuery.refetch()}>
+              Retry
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <ActiveJobsCard count={activeCount} />
-        <UsageGauge minutesUsed={minutesUsed} minutesIncluded={minutesIncluded} />
+        {activeJobsQuery.isError ? (
+          <ErrorState
+            message={activeJobsQuery.error.message}
+            onRetry={() => void activeJobsQuery.refetch()}
+          />
+        ) : (
+          <ActiveJobsCard count={activeCount} />
+        )}
+        <Card title="Cloud Processing">
+          <p className="text-sm text-gray-600">
+            {capabilityError
+              ? "Availability check failed."
+              : intakeReady
+                ? "Processing worker available."
+                : "Unavailable. No new jobs will be accepted."}
+          </p>
+        </Card>
       </div>
 
-      <RecentJobsList jobs={recentJobs} />
+      {recentJobsQuery.isError ? (
+        <ErrorState
+          message={recentJobsQuery.error.message}
+          onRetry={() => void recentJobsQuery.refetch()}
+        />
+      ) : (
+        <RecentJobsList jobs={recentJobs} />
+      )}
     </div>
   );
 }
