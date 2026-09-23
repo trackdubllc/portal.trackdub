@@ -9,10 +9,6 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-## Linear (agents)
-
-Track work in Linear workspace [trackdubllc](https://linear.app/trackdubllc) under project **Cloud & Portal** (label `repo:portal`). Agents must search/create/update Linear issues autonomously. Keep OpenAPI/schema work linked. See public-core `docs/operations/linear-workflow.md` when available.
-
 ## Cursor Cloud specific instructions
 
 TanStack Start / Vite / Bun portal (GitHub repo `trackdubllc/trackdub-api-hub`). Local: `bun install`, then `bun run dev` or `bun run build`.
