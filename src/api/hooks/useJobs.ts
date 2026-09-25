@@ -78,7 +78,7 @@ async function fetchJob(id: string): Promise<Job> {
 }
 
 async function cancelJob(id: string): Promise<void> {
-  await apiJson(`/api/dubs/${encodeURIComponent(id)}`, dubJobSchema, { method: "DELETE" });
+  await apiJson(`/api/dubs/${encodeURIComponent(id)}`, z.unknown(), { method: "DELETE" });
 }
 
 export function useCapabilities() {
