@@ -91,13 +91,15 @@ export const languagesSchema = z.object({
 });
 
 export const capabilitiesSchema = z.object({
-  status: z.string(),
-  capabilities: z.object({
-    jobIntake: z.boolean(),
-    upload: z.boolean(),
-    jobProcessing: z.boolean(),
-    outputDownload: z.boolean(),
-  }),
+  status: z.string().optional(),
+  capabilities: z
+    .object({
+      jobIntake: z.boolean().default(true),
+      upload: z.boolean().default(true),
+      jobProcessing: z.boolean().default(true),
+      outputDownload: z.boolean().default(true),
+    })
+    .default({ jobIntake: true, upload: true, jobProcessing: true, outputDownload: true }),
 });
 
 export const uploadResponseSchema = z.object({

@@ -24,8 +24,8 @@ export function CreateJobPage() {
   const languagesQuery = useLanguages();
   const capabilitiesQuery = useUploadCapabilities();
   const intakeCapabilitiesQuery = useIntakeCapabilities();
-  const intakeReady = intakeCapabilitiesQuery.data?.capabilities.jobIntake === true;
-  const uploadReady = capabilitiesQuery.data?.capabilities.jobIntake === true;
+  const intakeReady = intakeCapabilitiesQuery.data?.capabilities?.jobIntake !== false;
+  const uploadReady = capabilitiesQuery.data?.capabilities?.jobIntake !== false;
   const languages = languagesQuery.data ?? [];
   const languagesLoading = languagesQuery.isLoading;
   const languagesError =
@@ -62,7 +62,7 @@ export function CreateJobPage() {
   const formValid = projectNameValid && languagesDistinct && inputMediaPath !== null;
 
   const isSubmitDisabled =
-    !formValid || uploading || submitting || !intakeReady || intakeCapabilitiesQuery.isError;
+    !formValid || uploading || submitting || !intakeReady;
 
   // Computed validation messages
   const projectNameError = useMemo(() => {
@@ -160,7 +160,7 @@ export function CreateJobPage() {
             onUploadError={handleUploadError}
             onUploadStart={handleUploadStart}
             disabled={
-              submitting || !uploadReady || capabilitiesQuery.isLoading || capabilitiesQuery.isError
+              submitting || !uploadReady
             }
           />
         </Card>

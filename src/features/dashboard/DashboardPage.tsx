@@ -21,7 +21,7 @@ export function DashboardPage() {
 
   const activeCount = activeJobsQuery.data?.activeCount ?? 0;
   const recentJobs = recentJobsQuery.data ?? [];
-  const intakeReady = capabilitiesQuery.data?.capabilities.jobIntake === true;
+  const intakeReady = capabilitiesQuery.data?.capabilities?.jobIntake !== false;
   const capabilityError = capabilitiesQuery.isError;
 
   return (
