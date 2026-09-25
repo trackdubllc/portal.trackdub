@@ -24,8 +24,8 @@ export function CreateJobPage() {
   const languagesQuery = useLanguages();
   const capabilitiesQuery = useUploadCapabilities();
   const intakeCapabilitiesQuery = useIntakeCapabilities();
-  const intakeReady = intakeCapabilitiesQuery.data?.capabilities.jobIntake !== false;
-  const uploadReady = capabilitiesQuery.data?.capabilities.jobIntake !== false;
+  const intakeReady = intakeCapabilitiesQuery.data?.capabilities?.jobIntake !== false;
+  const uploadReady = capabilitiesQuery.data?.capabilities?.jobIntake !== false;
   const languages = languagesQuery.data ?? [];
   const languagesLoading = languagesQuery.isLoading;
   const languagesError =
