@@ -61,8 +61,7 @@ export function CreateJobPage() {
     sourceLanguage !== "" && targetLanguage !== "" && sourceLanguage !== targetLanguage;
   const formValid = projectNameValid && languagesDistinct && inputMediaPath !== null;
 
-  const isSubmitDisabled =
-    !formValid || uploading || submitting || !intakeReady;
+  const isSubmitDisabled = !formValid || uploading || submitting || !intakeReady;
 
   // Computed validation messages
   const projectNameError = useMemo(() => {
@@ -159,9 +158,7 @@ export function CreateJobPage() {
             onUploadComplete={handleUploadComplete}
             onUploadError={handleUploadError}
             onUploadStart={handleUploadStart}
-            disabled={
-              submitting || !uploadReady
-            }
+            disabled={submitting || !uploadReady}
           />
         </Card>
 

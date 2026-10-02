@@ -7,7 +7,7 @@ import {
   jobsListSchema,
   languagesSchema,
 } from "../src/api/runtime";
-import { mapJob } from "../src/api/hooks/useJobs";
+import { cancelJob, mapJob } from "../src/api/hooks/useJobs";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -45,19 +45,32 @@ describe("portal API response contracts", () => {
     expect(languagesSchema.safeParse([{ code: "en", name: "English" }]).success).toBe(false);
   });
 
-  it("keeps upload and job-intake readiness separate", () => {
+  it("keeps an explicit upload flag distinct from job intake", () => {
     const response = capabilitiesSchema.parse({
       status: "healthy",
       capabilities: { jobIntake: true, upload: false, jobProcessing: false, outputDownload: true },
     });
     expect(response.capabilities.upload).toBe(false);
     expect(response.capabilities.jobIntake).toBe(true);
-    expect(
-      capabilitiesSchema.safeParse({
-        status: "healthy",
-        capabilities: { jobIntake: true, jobProcessing: false, outputDownload: true },
-      }).success,
-    ).toBe(false);
+    expect(response.capabilities.jobProcessing).toBe(false);
+    expect(response.capabilities.outputDownload).toBe(true);
+  });
+
+  it("fills omitted capability flags instead of rejecting a partial health payload", () => {
+    const response = capabilitiesSchema.parse({
+      capabilities: { jobIntake: false },
+    });
+    expect(response.status).toBeUndefined();
+    expect(response.capabilities.jobIntake).toBe(false);
+    expect(response.capabilities.upload).toBe(true);
+    expect(response.capabilities.jobProcessing).toBe(true);
+    expect(response.capabilities.outputDownload).toBe(true);
+    expect(capabilitiesSchema.parse({}).capabilities).toEqual({
+      jobIntake: true,
+      upload: true,
+      jobProcessing: true,
+      outputDownload: true,
+    });
   });
 
   it("surfaces API error envelope and validates successful responses", async () => {
@@ -81,6 +94,45 @@ describe("portal API response contracts", () => {
       items: [],
       totalCount: 0,
     });
+  });
+
+  it("treats an empty cancel body as success and still surfaces cancel rejection", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("", { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: { message: "Cannot cancel a job in status Completed", code: "BAD_REQUEST" },
+          }),
+          { status: 400 },
+        ),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(cancelJob("job/1")).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      expect.stringMatching(/\/api\/dubs\/job%2F1$/),
+      expect.objectContaining({ method: "DELETE", credentials: "include" }),
+    );
+
+    await expect(cancelJob("job-1")).rejects.toMatchObject({
+      status: 400,
+      message: "Cannot cancel a job in status Completed",
+      code: "BAD_REQUEST",
+    });
+  });
+
+  it("accepts a worker cancel payload without requiring the job schema", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ message: "Job cancelled", jobId: "job-1" }), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(cancelJob("job-1")).resolves.toBeUndefined();
   });
 
   it("uses safe API-provided download filename", () => {
