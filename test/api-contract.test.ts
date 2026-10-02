@@ -127,23 +127,7 @@ describe("portal API response contracts", () => {
   it("accepts a worker cancel payload without requiring the job schema", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
-        JSON.stringify({
-          id: "job-1",
-          jobId: "job-1",
-          projectName: "Sample",
-          sourceLanguage: "en",
-          targetLanguage: "fr",
-          status: "Cancelled",
-          inputMediaPath: "uploads/u/file.mp4",
-          outputMediaPath: null,
-          progressPercent: 0,
-          currentStage: null,
-          errorMessage: null,
-          durationSeconds: null,
-          createdAt: "2026-09-25T12:00:00.000Z",
-          updatedAt: "2026-09-25T12:00:01.000Z",
-          completedAt: "2026-09-25T12:00:01.000Z",
-        }),
+        JSON.stringify({ message: "Job cancelled", jobId: "job-1" }),
         { status: 200 },
       ),
     );
