@@ -125,12 +125,11 @@ describe("portal API response contracts", () => {
   });
 
   it("accepts a worker cancel payload without requiring the job schema", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({ message: "Job cancelled", jobId: "job-1" }),
-        { status: 200 },
-      ),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ message: "Job cancelled", jobId: "job-1" }), { status: 200 }),
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(cancelJob("job-1")).resolves.toBeUndefined();
